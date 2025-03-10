@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "PORT=5173 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -41,6 +41,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "convex": "^1.19.5",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.5.2",
     "input-otp": "^1.4.2",

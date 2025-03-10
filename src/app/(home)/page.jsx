@@ -1,7 +1,8 @@
 import { CollectionTable } from './CollectionTable';
 
 const Home = () => {
-  const collectionName = "Jay's Collection";
+  // TODO: dynamic and editable.
+  const collectionName = "Jay's Star Wars Collection";
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-6">

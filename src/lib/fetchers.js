@@ -24,3 +24,16 @@ export const fetcher = async ([url, token]) => {
       throw error;
     }
   };
+
+  export const fetchLegoSets = async (filterValue) => {
+    try {
+    const response = await fetch(
+      `https://rebrickable.com/api/v3/lego/sets/?search=${filterValue}&key=${process.env.NEXT_PUBLIC_REBRICKABLE_API_KEY}`
+    );
+    const data = await response.json();
+    console.log("DATA res FROM API: ", data );
+    return data;
+  } catch (error) {
+    console.error('Error fetching sets:', error);
+  }
+  }

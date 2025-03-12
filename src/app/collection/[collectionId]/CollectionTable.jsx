@@ -32,7 +32,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
+import { useParams } from 'next/navigation';
+import { api } from '../../../../convex/_generated/api';
 
 export function CollectionTable() {
   const [sorting, setSorting] = useState([]);
@@ -41,8 +42,11 @@ export function CollectionTable() {
   const [rowSelection, setRowSelection] = useState({});
   const [filterColumn, setFilterColumn] = useState('name');
   const [filterValue, setFilterValue] = useState('');
-
-  const legoCollection = useQuery(api.collection.get);
+  const collectionId = useParams().collectionId;
+  const legoCollection = useQuery(api.collection.getLegoSetsForCollection, {
+    collectionId,
+  });
+  console.log('Lego Collection:', legoCollection);
 
   const onFilterChange = (event) => {
     const value = event.target.value;
@@ -156,7 +160,9 @@ export function CollectionTable() {
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => console.log('TODO: Finish delete function')}
+                  onClick={() =>
+                    console.log('TODO: Finish delete set function')
+                  }
                 >
                   Delete from Collection
                 </DropdownMenuItem>

@@ -7,7 +7,7 @@ export default function Header() {
   const { isSignedIn, user } = useUser();
 
   return (
-    <header className="flex items-center justify-between p-4 bg-gray-800 text-white">
+    <header className="flex items-center justify-between p-4 bg-blue-900 text-white">
       <Link href="/" className="text-xl font-bold">
         LEGO Collector
       </Link>

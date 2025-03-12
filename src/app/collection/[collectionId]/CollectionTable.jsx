@@ -1,18 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import {
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable
+  useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,7 +18,9 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuContent,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,64 +29,11 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from '@/components/ui/table';
-
-const data = [
-  {
-    set_num: '75334-1',
-    name: 'Obi-Wan Kenobi vs. Darth Vader',
-    year: 2022,
-    theme_id: 158,
-    num_parts: 408,
-    set_img_url: 'https://cdn.rebrickable.com/media/sets/75334-1/103527.jpg',
-    set_url:
-      'https://rebrickable.com/sets/75334-1/obi-wan-kenobi-vs-darth-vader/',
-    last_modified_dt: '2022-06-09T04:32:59.646728Z'
-  },
-  {
-    set_num: '75335-1',
-    name: 'BD-1',
-    year: 2022,
-    theme_id: 158,
-    num_parts: 1062,
-    set_img_url: 'https://cdn.rebrickable.com/media/sets/75335-1/103101.jpg',
-    set_url: 'https://rebrickable.com/sets/75335-1/bd-1/',
-    last_modified_dt: '2022-05-25T08:11:08.477556Z'
-  },
-  {
-    set_num: '75336-1',
-    name: 'Inquisitor Transport Scythe',
-    year: 2022,
-    theme_id: 158,
-    num_parts: 924,
-    set_img_url: 'https://cdn.rebrickable.com/media/sets/75336-1/103043.jpg',
-    set_url:
-      'https://rebrickable.com/sets/75336-1/inquisitor-transport-scythe/',
-    last_modified_dt: '2022-05-26T08:43:31.200857Z'
-  },
-  {
-    set_num: '75337-1',
-    name: 'AT-TE Walker',
-    year: 2022,
-    theme_id: 158,
-    num_parts: 1082,
-    set_img_url: 'https://cdn.rebrickable.com/media/sets/75337-1/103975.jpg',
-    set_url: 'https://rebrickable.com/sets/75337-1/at-te-walker/',
-    last_modified_dt: '2022-06-18T18:24:25.235143Z'
-  },
-  {
-    set_num: '75356-1',
-    name: 'Executor Super Star Destroyer',
-    year: 2023,
-    theme_id: 158,
-    num_parts: 630,
-    set_img_url: 'https://cdn.rebrickable.com/media/sets/75356-1/129771.jpg',
-    set_url:
-      'https://rebrickable.com/sets/75356-1/executor-super-star-destroyer/',
-    last_modified_dt: '2023-03-01T06:53:53.808642Z'
-  }
-];
+import { useQuery } from 'convex/react';
+import { useParams } from 'next/navigation';
+import { api } from '../../../../convex/_generated/api';
 
 export function CollectionTable() {
   const [sorting, setSorting] = useState([]);
@@ -96,6 +42,11 @@ export function CollectionTable() {
   const [rowSelection, setRowSelection] = useState({});
   const [filterColumn, setFilterColumn] = useState('name');
   const [filterValue, setFilterValue] = useState('');
+  const collectionId = useParams().collectionId;
+  const legoCollection = useQuery(api.collection.getLegoSetsForCollection, {
+    collectionId,
+  });
+  console.log('Lego Collection:', legoCollection);
 
   const onFilterChange = (event) => {
     const value = event.target.value;
@@ -104,7 +55,7 @@ export function CollectionTable() {
   };
 
   const table = useReactTable({
-    data,
+    data: legoCollection || [],
     columns: [
       {
         id: 'select',
@@ -128,12 +79,12 @@ export function CollectionTable() {
           />
         ),
         enableSorting: false,
-        enableHiding: false
+        enableHiding: false,
       },
       {
         accessorKey: 'set_num',
         header: 'Set Number',
-        cell: ({ row }) => <div>{row.getValue('set_num')}</div>
+        cell: ({ row }) => <div>{row.getValue('set_num')}</div>,
       },
       {
         accessorKey: 'name',
@@ -146,7 +97,7 @@ export function CollectionTable() {
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('name')}</div>
+        cell: ({ row }) => <div>{row.getValue('name')}</div>,
       },
       {
         accessorKey: 'set_img_url',
@@ -163,19 +114,19 @@ export function CollectionTable() {
               className="w-20 h-auto rounded"
             />
           </a>
-        )
+        ),
       },
       {
         accessorKey: 'year',
         header: 'Year',
-        cell: ({ row }) => <div>{row.getValue('year')}</div>
+        cell: ({ row }) => <div>{row.getValue('year')}</div>,
       },
       {
         accessorKey: 'num_parts',
         header: 'Piece Count',
         cell: ({ row }) => (
           <div className="text-center">{row.getValue('num_parts')}</div>
-        )
+        ),
       },
       {
         accessorKey: 'set_url',
@@ -189,8 +140,37 @@ export function CollectionTable() {
           >
             View Set
           </a>
-        )
-      }
+        ),
+      },
+      {
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const payment = row.original;
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    console.log('TODO: Finish delete set function')
+                  }
+                >
+                  Delete from Collection
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
     ],
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -204,8 +184,8 @@ export function CollectionTable() {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection
-    }
+      rowSelection,
+    },
   });
 
   return (

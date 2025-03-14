@@ -8,7 +8,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable,
+  useReactTable
 } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
@@ -20,7 +20,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { useQuery } from 'convex/react';
 import { useParams } from 'next/navigation';
@@ -66,14 +66,19 @@ export function CollectionTable() {
     return new Map(quantity.map((q) => [q.setNum, q.quantity]));
   }, [quantity]);
 
+  console.log('Quantity Map:', quantityMap);
+
   const mergedData = useMemo(() => {
-    if (!legoCollection || !quantity) return [];
+    if (!legoCollection?.length || !quantity?.length) return [];
     return legoCollection.map((set) => {
       const setNum = set.set_num;
       const setQuantity = quantityMap.get(setNum) || 0;
       return { ...set, quantity: setQuantity };
     });
   }, [legoCollection, quantity, quantityMap]);
+
+  console.log('Merged Data:', mergedData);
+  console.log('Image URL:', mergedData[0]?.set_img_url);
 
   const removeSetFromCollection = useMutation(
     api.collection.removeSetFromCollection
@@ -119,12 +124,12 @@ export function CollectionTable() {
           />
         ),
         enableSorting: false,
-        enableHiding: false,
+        enableHiding: false
       },
       {
         accessorKey: 'set_num',
         header: 'Set Number',
-        cell: ({ row }) => <div>{row.getValue('set_num')}</div>,
+        cell: ({ row }) => <div>{row.getValue('set_num')}</div>
       },
       {
         accessorKey: 'name',
@@ -137,7 +142,7 @@ export function CollectionTable() {
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('name')}</div>,
+        cell: ({ row }) => <div>{row.getValue('name')}</div>
       },
       {
         accessorKey: 'set_img_url',
@@ -147,27 +152,31 @@ export function CollectionTable() {
             href={row.getValue('set_url')}
             target="_blank"
             rel="noopener noreferrer"
-            className="block sm:hidden"
+            className="block w-20 h-auto"
           >
             <img
+              key={row.getValue('set_img_url')}
               src={row.getValue('set_img_url')}
               alt="LEGO set"
               className="w-20 h-auto rounded"
+              onError={() =>
+                console.log('Image failed to load for', row.getValue('set_num'))
+              }
             />
           </a>
-        ),
+        )
       },
       {
         accessorKey: 'year',
         header: 'Year',
-        cell: ({ row }) => <div>{row.getValue('year')}</div>,
+        cell: ({ row }) => <div>{row.getValue('year')}</div>
       },
       {
         accessorKey: 'num_parts',
         header: 'Piece Count',
         cell: ({ row }) => (
           <div className="text-center">{row.getValue('num_parts')}</div>
-        ),
+        )
       },
       {
         accessorKey: 'set_url',
@@ -181,7 +190,7 @@ export function CollectionTable() {
           >
             View Set
           </a>
-        ),
+        )
       },
       {
         accessorKey: 'inventory',
@@ -190,7 +199,7 @@ export function CollectionTable() {
           const setNum = row.original.set_num;
           const setQuantity = quantityMap.get(setNum) || 0;
           return <div className="text-center">{setQuantity}</div>;
-        },
+        }
       },
       {
         id: 'actions',
@@ -233,8 +242,8 @@ export function CollectionTable() {
               )}
             </DropdownMenu>
           );
-        },
-      },
+        }
+      }
     ],
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -248,8 +257,8 @@ export function CollectionTable() {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
-    },
+      rowSelection
+    }
   });
 
   return (
@@ -352,4 +361,3 @@ export function CollectionTable() {
     </div>
   );
 }
-

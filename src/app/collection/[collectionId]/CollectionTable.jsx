@@ -1,6 +1,7 @@
 'use client';
 
-import { use, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMutation } from 'convex/react';
 import {
   flexRender,
   getCoreRowModel,
@@ -12,7 +13,6 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,6 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -34,19 +35,49 @@ import {
 import { useQuery } from 'convex/react';
 import { useParams } from 'next/navigation';
 import { api } from '../../../../convex/_generated/api';
+import { toast } from 'sonner';
+import UpdateQuantityForm from './UpdateQuantityForm';
 
 export function CollectionTable() {
-  const [sorting, setSorting] = useState([]);
+  const [activeSetNum, setActiveSetNum] = useState(null);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
-  const [rowSelection, setRowSelection] = useState({});
   const [filterColumn, setFilterColumn] = useState('name');
   const [filterValue, setFilterValue] = useState('');
-  const collectionId = useParams().collectionId;
-  const legoCollection = useQuery(api.collection.getLegoSetsForCollection, {
-    collectionId,
-  });
-  console.log('Lego Collection:', legoCollection);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
+  const [selectedSetNum, setSelectedSetNum] = useState('');
+  const [sorting, setSorting] = useState([]);
+
+  const { collectionId } = useParams();
+
+  const legoCollection = useQuery(
+    api.collection.getLegoSetsForCollection,
+    collectionId ? { collectionId } : null
+  );
+
+  const quantity = useQuery(
+    api.collection.getCollectionSetQuantities,
+    collectionId ? { collectionId } : null
+  );
+
+  const quantityMap = useMemo(() => {
+    if (!quantity || !Array.isArray(quantity)) return new Map();
+    return new Map(quantity.map((q) => [q.setNum, q.quantity]));
+  }, [quantity]);
+
+  const mergedData = useMemo(() => {
+    if (!legoCollection || !quantity) return [];
+    return legoCollection.map((set) => {
+      const setNum = set.set_num;
+      const setQuantity = quantityMap.get(setNum) || 0;
+      return { ...set, quantity: setQuantity };
+    });
+  }, [legoCollection, quantity, quantityMap]);
+
+  const removeSetFromCollection = useMutation(
+    api.collection.removeSetFromCollection
+  );
 
   const onFilterChange = (event) => {
     const value = event.target.value;
@@ -54,9 +85,18 @@ export function CollectionTable() {
     table.getColumn(filterColumn)?.setFilterValue(value);
   };
 
+  const handleSetDelete = async (setNum) => {
+    try {
+      await removeSetFromCollection({ setNum, collectionId });
+    } catch (error) {
+      toast.error('Something went wrong ', error);
+    }
+  };
+
   const table = useReactTable({
-    data: legoCollection || [],
+    data: mergedData,
     columns: [
+      //TODO: Add back in and figure out multiple selection options
       {
         id: 'select',
         header: ({ table }) => (
@@ -107,6 +147,7 @@ export function CollectionTable() {
             href={row.getValue('set_url')}
             target="_blank"
             rel="noopener noreferrer"
+            className="block sm:hidden"
           >
             <img
               src={row.getValue('set_img_url')}
@@ -143,11 +184,19 @@ export function CollectionTable() {
         ),
       },
       {
+        accessorKey: 'inventory',
+        header: 'Inventory',
+        cell: ({ row }) => {
+          const setNum = row.original.set_num;
+          const setQuantity = quantityMap.get(setNum) || 0;
+          return <div className="text-center">{setQuantity}</div>;
+        },
+      },
+      {
         id: 'actions',
         enableHiding: false,
         cell: ({ row }) => {
           const payment = row.original;
-
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -156,17 +205,32 @@ export function CollectionTable() {
                   <MoreHorizontal />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48 sm:w-auto">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() =>
-                    console.log('TODO: Finish delete set function')
-                  }
+                  onClick={() => handleSetDelete(row.getValue('set_num'))}
                 >
                   Delete from Collection
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    // Set activeSetNum to the setNum of the current row
+                    setActiveSetNum(row.getValue('set_num'));
+                  }}
+                >
+                  Update Quantity
+                </DropdownMenuItem>
               </DropdownMenuContent>
+
+              {/* Render UpdateQuantityForm only when a row is selected */}
+              {activeSetNum === row.getValue('set_num') && (
+                <UpdateQuantityForm
+                  setNum={row.getValue('set_num')}
+                  collectionId={collectionId}
+                  onClose={() => setActiveSetNum(null)}
+                />
+              )}
             </DropdownMenu>
           );
         },
@@ -190,9 +254,8 @@ export function CollectionTable() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        <div className="flex gap-4 items-center">
-          {/* Dropdown to select filter column */}
+      <div className="flex flex-col sm:flex-row sm:items-center py-4 gap-4">
+        <div className="flex flex-wrap gap-4 sm:gap-8">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -211,18 +274,16 @@ export function CollectionTable() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Input field for filtering */}
           <Input
             placeholder={`Filter sets by ${
               filterColumn === 'name' ? 'name' : 'number'
             }...`}
             value={filterValue}
             onChange={onFilterChange}
-            className="max-w-sm"
+            className="max-w-xs sm:max-w-md"
           />
         </div>
-        {/* Dropdown menu to select columns to be shown */}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -246,7 +307,7 @@ export function CollectionTable() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -280,7 +341,7 @@ export function CollectionTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={12} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -291,3 +352,4 @@ export function CollectionTable() {
     </div>
   );
 }
+
